@@ -5,7 +5,7 @@ const storage=multer.diskStorage({
         cb(null, "./public/temp")
     },
     filename: (req, file, cb)=>{
-        cb(null, file.originalname+"-"+Date.now()+"abc")
+        cb(null, Date.now()+"-"+file.originalname)
     }
 })
 
