@@ -4,6 +4,19 @@ import { User } from "../models/user.model.js"
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import ApiResponse from "../utils/ApiRespose.js";
 
+const generateAccessRefreshTokens = async (userId) => {
+    try {
+        const user = await findById(userId)
+        const token = await user.generateAccessTokens()
+        const refrehToken = await user.refreshAccessTokens()
+        user.refrehToken = refrehToken;
+        await user.save({ validateBeforeSave: false });
+        return { token, refrehToken };
+    } catch (error) {
+        console.error("Token couldn't be generated");
+    }
+}
+
 const registerUser = asyncHandler(async (req, res) => {
     // Steps:-
     // Get the user details
@@ -63,4 +76,37 @@ const registerUser = asyncHandler(async (req, res) => {
 
 })
 
-export { registerUser }
+const loginUser = asyncHandler(async (req, res) => {
+    const { email, username, password } = req.body;
+    if (!email && !username) {
+        throw new ApiError(400, "Required username or password");
+    }
+    const user = await User.findOne({
+        $or: [{ username }, { email }]
+    })
+    if (!user) {
+        throw new ApiError(404, "Uper not registered");
+    }
+    const passwordValid = await isPasswordCorrect(password);
+    if (!password) {
+        throw new ApiError(401, "Password is Wrong");
+    }
+    const { token, refreshToken } = await generateAccessTokens(user._id)
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+    const options = {
+        httpOnly: true,
+        secure: true
+    }
+    return res.status(200)
+        .cookie("token", token, options)
+        .cookie("refreshToken", refreshToken, options)
+        .json(
+            new ApiResponse(200, {
+                user: loggedInUser, token, refreshToken
+            },
+                "User logged in Successfully"
+            )
+        )
+})
+
+export { registerUser, loginUser }

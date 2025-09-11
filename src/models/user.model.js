@@ -3,14 +3,6 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
 const userSchema = new mongoose.Schema({
-    // id: {
-    //     type: String,
-    //     required: true,
-    //     unique: true,
-    //     lowercase: true,
-    //     trim: true,
-    //     index: true
-    // },
     email: {
         type: String,
         required: true,
@@ -55,11 +47,14 @@ const userSchema = new mongoose.Schema({
 }, { timestamps: true })
 
 // Hooks
-userSchema.pre("save", async function (next) {
-    if (!this.isModified("password")) return next();
-    this.password = await bcrypt.hash(this.password, 10);
-    next();
-})
+userSchema.pre(//(event, option?, callback)
+    "save", //event
+    async function (next) { //callback
+        if (!this.isModified("password")) return next();
+        this.password = await bcrypt.hash(this.password, 10);
+        next();
+    }
+)
 
 // Methods, bcrypt
 userSchema.methods.isPasswordCorrect = async function (password) {
@@ -68,15 +63,16 @@ userSchema.methods.isPasswordCorrect = async function (password) {
 
 // JWT
 userSchema.methods.generateAccessTokens = function () {
-    return jwt.sign({
-        _id: this._id,
-        email: this.email,
-        username: this.username,
-        fullName: this.fullName
+    return jwt.sign(//(payload, secret key, [options, callback])
+        { //Payload
+            _id: this._id,
+            email: this.email,
+            username: this.username,
+            fullName: this.fullName
 
-    },
-        process.env.ACCESS_TOKEN_SECRET,
-        {
+        },
+        process.env.ACCESS_TOKEN_SECRET, //secretkey
+        {//Options
             expiresIn: process.env.ACCESS_TOKEN_EXPIRY
         }
     )
