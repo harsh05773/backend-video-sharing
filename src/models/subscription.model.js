@@ -7,7 +7,7 @@ const subscriptonSchema= new mongoose.Schema({
     },
     channel:{
         type:mongoose.Schema.type.ObjectID,
-        ref
+        ref:"User"
     }
 },{timestamps:true})
 
